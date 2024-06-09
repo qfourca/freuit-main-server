@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import { join } from 'path';
+import { ConfigService } from './config.service';
 
+@Global()
 @Module({
+  exports: [ConfigService],
   imports: [
     NestConfigModule.forRoot({
       cache: true,
@@ -13,5 +16,6 @@ import { join } from 'path';
       ),
     }),
   ],
+  providers: [ConfigService],
 })
 export class ConfigModule {}
