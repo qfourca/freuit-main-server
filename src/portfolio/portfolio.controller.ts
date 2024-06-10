@@ -1,9 +1,10 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Logger, Post } from '@nestjs/common';
 import { PortfolioService } from './portfolio.service';
 import { FileService } from 'src/file/file.service';
 
 @Controller('portfolio')
 export class PortfolioController {
+  private readonly logger = new Logger(PortfolioController.name);
   constructor(
     private readonly service: PortfolioService,
     private readonly filemod: FileService,
@@ -11,15 +12,16 @@ export class PortfolioController {
 
   @Get()
   async getHello(): Promise<string> {
-    await this.filemod.saveFile(
-      'https://www.next-t.co.kr/public/uploads/7b7f7e2138e29e598cd0cdf2c85ea08d.jpg',
-    );
-    return this.service.getHello();
+    return 'Hello World';
   }
 
   @Post('project')
   public async syncProject(): Promise<string> {
-    const projects = (await this.service.getProjectFromNotion()).data;
-    return await this.service.saveProject(projects);
+    try {
+      const projects = (await this.service.getProjectFromNotion()).data;
+      return await this.service.saveProject(projects);
+    } catch (e) {
+      this.logger.error(e);
+    }
   }
 }

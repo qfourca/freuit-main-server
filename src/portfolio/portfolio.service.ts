@@ -8,6 +8,7 @@ import { AxiosResponse } from 'axios';
 import { List } from 'notion-api-types/endpoints/global';
 import NotionPage from 'package/notion/page';
 import { ConfigKey } from 'src/config/configKey';
+import { FileService } from 'src/file/file.service';
 
 @Injectable()
 export class PortfolioService {
@@ -16,11 +17,8 @@ export class PortfolioService {
     private readonly projRep: ProjectRepository,
     private readonly confSer: ConfigService,
     private readonly httpSer: HttpService,
+    private readonly fileSer: FileService,
   ) {}
-
-  public getHello(): string {
-    return 'Hello World!';
-  }
 
   public async saveProject(projects: List<NotionPage>): Promise<string> {
     const insertableProject: Array<Project> = [];
@@ -40,6 +38,14 @@ export class PortfolioService {
           });
         }
       }
+    });
+    const files = await Promise.all(
+      insertableProject.map(({ thumbnail }) =>
+        this.fileSer.saveFile(thumbnail),
+      ),
+    );
+    files.forEach((file, idx) => {
+      insertableProject[idx].thumbnail = file.hash;
     });
     await this.projRep.save(insertableProject);
     return 'SUCCESS';

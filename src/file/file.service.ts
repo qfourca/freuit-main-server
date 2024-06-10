@@ -33,8 +33,10 @@ export class FileService {
   }
 
   public async saveFile(file: SaveableFile): Promise<S3FileData> {
+    let upscopeId: string = '';
     try {
-      const { path, type } = await this.downloadFile(file);
+      const { id, path, type } = await this.downloadFile(file);
+      upscopeId = id;
       const hash = await this.calculateHash(path);
       const isExist = await this.dbFileRep.existsBy({ hash });
       if (!isExist) {
@@ -44,12 +46,15 @@ export class FileService {
       return await this.dbFileRep.findOneBy({ hash });
     } catch (e) {
       this.logger.error(e);
+    } finally {
+      if (upscopeId !== '')
+        await this.tmpFileRep.update({ id: upscopeId }, { delete: true });
     }
   }
 
   private async downloadFile(
     file: SaveableFile,
-  ): Promise<{ path: string; type?: string }> {
+  ): Promise<{ id: string; path: string; type?: string }> {
     try {
       if (typeof file === 'string') {
         const data = await firstValueFrom(
@@ -60,6 +65,7 @@ export class FileService {
           const path = this.config.path('tmp', String(res.raw));
           await pipeline(data.data, fs.createWriteStream(path));
           return {
+            id: String(res.raw),
             path,
             type: String(
               data.headers['content-type'] ?? data.headers['Content-Type'],
@@ -78,7 +84,7 @@ export class FileService {
 
   private calculateHash(path: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const hash = crypto.createHash('sha1');
+      const hash = crypto.createHash('sha256');
       const stream = fs.createReadStream(path);
 
       stream.on('data', (data) => hash.update(data));
