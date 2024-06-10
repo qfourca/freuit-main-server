@@ -1,14 +1,11 @@
-import { Controller, Get, Logger, Post } from '@nestjs/common';
+import { Controller, Get, Logger, Post, Query } from '@nestjs/common';
 import { PortfolioService } from './portfolio.service';
-import { FileService } from 'src/file/file.service';
+import { Project } from './entity/project.entity';
 
 @Controller('portfolio')
 export class PortfolioController {
   private readonly logger = new Logger(PortfolioController.name);
-  constructor(
-    private readonly service: PortfolioService,
-    private readonly filemod: FileService,
-  ) {}
+  constructor(private readonly service: PortfolioService) {}
 
   @Get()
   async getHello(): Promise<string> {
@@ -18,8 +15,24 @@ export class PortfolioController {
   @Post('project')
   public async syncProject(): Promise<string> {
     try {
-      const projects = (await this.service.getProjectFromNotion()).data;
-      return await this.service.saveProject(projects);
+      const projects = await this.service.getProjectFromNotion();
+      const updates = await this.service.saveProject(projects);
+      return String(updates);
+    } catch (e) {
+      this.logger.error(e);
+      return 'ERROR';
+    }
+  }
+
+  @Get('project')
+  public async getProject(
+    @Query('origin') origin?: string,
+  ): Promise<Array<Project>> {
+    try {
+      origin = origin ?? '';
+      return origin.toLowerCase() === 'notion'
+        ? await this.service.getProjectFromNotion()
+        : await this.service.getProjectFromDb();
     } catch (e) {
       this.logger.error(e);
     }

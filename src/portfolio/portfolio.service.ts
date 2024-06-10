@@ -4,7 +4,6 @@ import { Project, ProjectRepository } from './entity/project.entity';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { AxiosResponse } from 'axios';
 import { List } from 'notion-api-types/endpoints/global';
 import NotionPage from 'package/notion/page';
 import { ConfigKey } from 'src/config/configKey';
@@ -20,40 +19,34 @@ export class PortfolioService {
     private readonly fileSer: FileService,
   ) {}
 
-  public async saveProject(projects: List<NotionPage>): Promise<string> {
-    const insertableProject: Array<Project> = [];
-
-    projects.results.forEach((pro: NotionPage) => {
-      if (pro.object === 'page' && pro.cover.type === 'file') {
-        let title: string | undefined;
-        Object.keys(pro.properties).forEach((key) => {
-          const property = pro.properties[key];
-          if (property.type === 'title') title = property.title[0].plain_text;
-        });
-        if (title) {
-          insertableProject.push({
-            uuid: pro.id,
-            title: title,
-            thumbnail: pro.cover.file.url,
-          });
-        }
-      }
-    });
-    const files = await Promise.all(
-      insertableProject.map(({ thumbnail }) =>
-        this.fileSer.saveFile(thumbnail),
-      ),
-    );
-    files.forEach((file, idx) => {
-      insertableProject[idx].thumbnail = file.hash;
-    });
-    await this.projRep.save(insertableProject);
-    return 'SUCCESS';
+  public async saveProject(projects: Array<Project>): Promise<number> {
+    try {
+      const files = await Promise.all(
+        projects.map(({ thumbnail }) => this.fileSer.saveFile(thumbnail)),
+      );
+      files.forEach((file, idx) => {
+        projects[idx].thumbnail = file.hash;
+      });
+      return (await this.projRep.save(projects)).length;
+    } catch (e) {
+      throw e;
+    }
   }
 
-  public async getProjectFromNotion(): Promise<
-    AxiosResponse<List<NotionPage>>
-  > {
+  public async getProjectFromDb(): Promise<Array<Project>> {
+    const projects = await this.projRep.find();
+    const files = await Promise.all(
+      projects.map(({ thumbnail }) => {
+        return this.fileSer.hashToUrl(thumbnail, 60);
+      }),
+    );
+    files.forEach((file, idx) => {
+      projects[idx].thumbnail = file;
+    });
+    return projects;
+  }
+
+  public async getProjectFromNotion(): Promise<Array<Project>> {
     const token = this.confSer.get(ConfigKey.NOTION_KEY);
     const id = this.confSer.get(ConfigKey.NOTION_PROJECT_KEY);
 
@@ -67,8 +60,24 @@ export class PortfolioService {
         },
       },
     );
-    const data = await firstValueFrom(notionProjects.pipe());
-
-    return data;
+    const data = (await firstValueFrom(notionProjects.pipe())).data;
+    const projects: Array<Project> = [];
+    data.results.forEach((pro: NotionPage) => {
+      if (pro.object === 'page' && pro.cover.type === 'file') {
+        let title: string | undefined;
+        Object.keys(pro.properties).forEach((key) => {
+          const property = pro.properties[key];
+          if (property.type === 'title') title = property.title[0].plain_text;
+        });
+        if (title) {
+          projects.push({
+            uuid: pro.id,
+            title: title,
+            thumbnail: pro.cover.file.url,
+          });
+        }
+      }
+    });
+    return projects;
   }
 }

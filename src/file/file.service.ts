@@ -9,9 +9,14 @@ import { S3FileData, DbFileDataRepository } from './s3file.entity';
 import { LOCAL_DB_NAME } from 'src/module/localdb.module';
 import * as crypto from 'crypto';
 import { InjectAws } from 'aws-sdk-v3-nest';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { ConfigKey } from 'src/config/configKey';
 import { TempFileData, TempFileDataRepository } from './tmpfile.entity';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export type SaveableFile = string;
 
@@ -49,6 +54,20 @@ export class FileService {
     } finally {
       if (upscopeId !== '')
         await this.tmpFileRep.update({ id: upscopeId }, { delete: true });
+    }
+  }
+
+  public async hashToUrl(hash: string, expire: number = 15): Promise<any> {
+    const command = new GetObjectCommand({
+      Bucket: this.config.awsConfig.s3.bucket,
+      Key: this.s3Folder + '/' + hash,
+    });
+    try {
+      return await getSignedUrl(this.s3Client, command, {
+        expiresIn: expire * 60,
+      });
+    } catch (error) {
+      throw null;
     }
   }
 
