@@ -1,0 +1,8 @@
+{
+  "entities": ["src/**/*.entity.ts"],
+  "cli": {
+    "entitiesDir": "src/entity",
+    "migrationsDir": "src/migration",
+    "subscribersDir": "src/subscriber"
+  }
+}

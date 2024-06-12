@@ -5,6 +5,10 @@ import { join } from 'path';
 
 @Injectable()
 export class ConfigService extends NestConfigService {
+  public get isProd() {
+    return this.get('NODE_ENV') === 'production';
+  }
+
   public get remoteDbConfig() {
     return {
       host: this.get(ConfigKey.DATABASE_HOST),

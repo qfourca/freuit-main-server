@@ -9,7 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         ...configService.remoteDbConfig,
-        synchronize: true,
+        synchronize: !configService.isProd,
         autoLoadEntities: true,
       }),
     }),

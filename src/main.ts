@@ -9,6 +9,6 @@ async function bootstrap() {
     await mkdir('./fs/tmp');
   } catch {}
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  await app.listen(3000);
+  await app.listen(+process.env.APP_PORT ?? 3000);
 }
 bootstrap();
