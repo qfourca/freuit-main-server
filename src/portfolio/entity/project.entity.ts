@@ -1,5 +1,5 @@
-import { HashByteaColumn, S3FileData } from 'src/file/s3file.entity';
-import { Column, Entity, OneToOne, PrimaryColumn, Repository } from 'typeorm';
+import { transformer } from 'src/file/s3file.entity';
+import { Column, Entity, PrimaryColumn, Repository } from 'typeorm';
 
 @Entity({ name: 'project' })
 export class Project {
@@ -9,8 +9,7 @@ export class Project {
   @Column('text')
   title: string;
 
-  @OneToOne(() => S3FileData)
-  @HashByteaColumn({ nullable: true })
+  @Column('bytea', { transformer: transformer })
   thumbnail: string;
 }
 

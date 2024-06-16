@@ -1,10 +1,13 @@
 import { config as loadConfig } from 'dotenv';
+import { join } from 'path';
 
 loadConfig({
-  path:
+  path: join(
+    __dirname,
     process.env.NODE_ENV === 'production'
-      ? 'src/config/prod.env'
-      : 'src/config/dev.env',
+      ? '../config/prod.env'
+      : '../config/dev.env',
+  ),
 });
 
 import { DataSource } from 'typeorm';

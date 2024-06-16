@@ -11,7 +11,7 @@ import { ConfigService } from './config.service';
       cache: true,
       isGlobal: true,
       envFilePath: join(
-        'src/config',
+        __dirname,
         process.env.NODE_ENV === 'production' ? 'prod.env' : 'dev.env',
       ),
     }),

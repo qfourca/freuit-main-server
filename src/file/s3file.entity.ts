@@ -1,19 +1,13 @@
-import {
-  Column,
-  ColumnOptions,
-  Entity,
-  PrimaryColumn,
-  Repository,
-} from 'typeorm';
+import { Column, Entity, PrimaryColumn, Repository } from 'typeorm';
 
-const transformer = {
+export const transformer = {
   to: (v: string) => Buffer.from(v, 'base64'),
   from: (b: Buffer) => b.toString('base64'),
 };
 
 @Entity({ name: 's3_file' })
 export class S3FileData {
-  @PrimaryColumn('bytea', { transformer })
+  @PrimaryColumn('bytea')
   hash: string;
 
   @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
@@ -24,7 +18,3 @@ export class S3FileData {
 }
 
 export type DbFileDataRepository = Repository<S3FileData>;
-
-export const HashByteaColumn = (options: ColumnOptions = {}) => {
-  return Column('bytea', { ...options, transformer });
-};
